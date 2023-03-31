@@ -1,9 +1,8 @@
 [package]
 name = "coupon-collect"
-publish = false
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
+description = "Coupon collect problem solver"
 repository = "https://github.com/oovm/sub_projects"
 documentation = "https://docs.rs/sub_projects"
 readme = "Readme.md"
@@ -11,6 +10,9 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
+latexify = "0.0.0"
+num = "0.4.0"
+itertools = "0.10.5"
 
 [dev-dependencies]
 
