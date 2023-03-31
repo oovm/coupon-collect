@@ -10,6 +10,7 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
+ndarray = "0.15.6"
 latexify = "0.0.0"
 num = "0.4.0"
 itertools = "0.10.5"
