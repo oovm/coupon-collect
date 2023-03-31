@@ -1,7 +1,8 @@
 use std::iter::from_generator;
+use std::ops::Mul;
 use ndarray::Array2;
 
-use num::{BigInt, One};
+use num::{BigInt};
 use num::rational::Ratio;
 
 pub struct MarkovChain {
@@ -13,7 +14,7 @@ pub struct MarkovChain {
     weights: Vec<Ratio<BigInt>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StateTransition {
     transition: Vec<usize>,
     probability: Ratio<BigInt>,
@@ -71,17 +72,42 @@ impl MarkovChain {
             }
         })
     }
-    pub fn get_transition(&self, delta: &[usize], probabilities: &[Ratio<BigInt>]) -> StateTransition {
-        let mut transition = vec![0; self.count_kind()];
-        let mut probability = Ratio::one();
-        for (i, &d) in delta.iter().enumerate() {
-            transition[i] = d;
-            probability *= probabilities[i].pow(d as i32);
+    pub fn get_frequency(&self, delta: &[usize]) -> Ratio<BigInt> {
+        assert_eq!(delta.iter().sum::<usize>(), self.count_deck(), "delta must same as deck");
+        // eg. deck = 3, kind = 2
+        // (3, 0) => 1
+        // (2, 1) => 3
+        // (1, 2) => 3
+        // (0, 3) => 1
+        let mut frequency = Ratio::from_integer(BigInt::from(1));
+        let mut count = 0;
+        for i in 0..self.count_kind() {
+            let mut j = 0;
+            while j < delta[i] {
+                frequency *= Ratio::from_integer(BigInt::from(count + 1));
+                frequency /= Ratio::from_integer(BigInt::from(j + 1));
+                j += 1;
+                count += 1;
+            }
         }
-        StateTransition {
-            transition,
-            probability,
+        frequency
+    }
+
+    pub fn get_transitions(&self) -> Vec<StateTransition> {
+        let mut transitions = Vec::new();
+        let probabilities = self.get_probabilities();
+        for delta in self.get_transition_states() {
+            let frequency = self.get_frequency(&delta);
+            let probability = probabilities.iter()
+                .zip(delta.iter())
+                .map(|(p, d)| p.mul(BigInt::from(*d)))
+                .fold(Ratio::from_integer(BigInt::from(1)), |acc, x| acc * x);
+            transitions.push(StateTransition {
+                transition: delta,
+                probability: frequency * probability,
+            });
         }
+        transitions
     }
 }
 
@@ -112,6 +138,6 @@ fn test() {
     let probabilities = mc.get_probabilities();
     println!("{:?}", probabilities);
     for state in mc.get_transition_states() {
-        println!("{:?}", mc.get_transition(&state, &probabilities));
+        println!("{:?}", mc.get_frequency(&state));
     }
 }
