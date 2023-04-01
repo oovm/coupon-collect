@@ -94,20 +94,29 @@ impl MarkovChain {
     }
 
     pub fn get_transitions(&self) -> Vec<StateTransition> {
-        let mut transitions = Vec::new();
         let probabilities = self.get_probabilities();
-        for delta in self.get_transition_states() {
-            let frequency = self.get_frequency(&delta);
-            let probability = probabilities.iter()
-                .zip(delta.iter())
-                .map(|(p, d)| p.mul(BigInt::from(*d)))
-                .fold(Ratio::from_integer(BigInt::from(1)), |acc, x| acc * x);
+        let mut transitions = vec![];
+        for state in self.get_transition_states() {
+            let frequency = self.get_frequency(&state);
+            let mut probability = frequency;
+            for i in 0..self.count_kind() {
+                probability *= probabilities[i].clone().pow(state[i] as i32);
+            }
             transitions.push(StateTransition {
-                transition: delta,
-                probability: frequency * probability,
+                transition: state,
+                probability,
             });
         }
         transitions
+    }
+}
+
+impl StateTransition {
+    pub fn new(delta: &[usize], probability: Ratio<BigInt>) -> Self {
+        Self {
+            transition: delta.to_vec(),
+            probability,
+        }
     }
 }
 
@@ -137,7 +146,7 @@ fn test() {
     mc.define_cards(1, BigInt::from(1));
     let probabilities = mc.get_probabilities();
     println!("{:?}", probabilities);
-    for state in mc.get_transition_states() {
-        println!("{:?}", mc.get_frequency(&state));
+    for state in mc.get_transitions() {
+        println!("{:?}", state);
     }
 }
